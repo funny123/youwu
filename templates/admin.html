@@ -29,8 +29,9 @@
   <h2>卖家联系方式</h2>
   <input type="hidden" name="csrf" value="{{ csrf_token() }}">
   <label>邮箱<input type="email" name="email" value="{{ seller.email }}" maxlength="200"></label>
-  <label>电话<input type="tel" name="phone" value="{{ seller.phone }}" maxlength="200"></label>
-  <label>微信<input name="wechat" value="{{ seller.wechat }}" maxlength="200"></label>
+  <label>WhatsApp（含国家区号）<input type="tel" name="whatsapp" value="{{ seller.whatsapp }}" placeholder="+678 …" maxlength="32"></label>
+  <label>Telegram 用户名<input name="telegram" value="{{ seller.telegram }}" placeholder="@用户名" maxlength="33"></label>
+  {% if contact_error %}<p class="error" role="alert">{{ contact_error }}</p>{% endif %}
   <button class="primary">保存联系方式</button>
 </form>
 {% endblock %}

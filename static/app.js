@@ -31,17 +31,20 @@ function render() {
 function showContact() {
   detail.innerHTML = '<div class="dialog-body"><h2 id="dialog-title">联系卖家</h2><div id="channels"></div></div>';
   const channels = byId('channels');
-  for (const [label, value, protocol] of [
-    ['邮箱', seller.email, 'mailto:'], ['电话', seller.phone, 'tel:'], ['微信', seller.wechat, '']
+  for (const [label, value, prefix] of [
+    ['发送邮件', seller.email, 'mailto:'],
+    ['打开 WhatsApp', seller.whatsapp, 'https://wa.me/'],
+    ['打开 Telegram', seller.telegram, 'https://t.me/']
   ]) {
     if (!value) continue;
-    const row = document.createElement('p');
-    row.append(label + '　');
-    const entry = document.createElement(protocol ? 'a' : 'span');
-    entry.textContent = value;
-    if (protocol) entry.href = protocol + value;
-    row.append(entry);
-    channels.append(row);
+    const link = document.createElement('a');
+    link.textContent = label + ' ↗';
+    link.href = prefix + encodeURIComponent(value).replace(/%40/g, '@');
+    if (prefix.startsWith('https://')) {
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+    }
+    channels.append(link);
   }
   if (!channels.childElementCount) channels.textContent = '卖家暂未填写联系方式。';
   if (!dialog.open) dialog.showModal();

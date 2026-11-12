@@ -8,14 +8,12 @@ button,input{font:inherit;color:inherit}
 button{cursor:pointer}
 button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #75894c;outline-offset:4px}
 .wrap{width:min(1184px,calc(100% - 80px));margin:auto}
-.brand{font-size:23px;font-weight:900;display:inline-flex;gap:10px;align-items:center;white-space:nowrap}
-.mark{display:inline-grid;place-items:center;width:36px;height:36px;background:var(--green);color:var(--lime);border-radius:50%;font-size:24px;line-height:1}
 .line,.pill{background:transparent;border:1px solid var(--border);border-radius:99px;padding:8px 16px}
 .line:hover,.pill:hover{border-color:var(--green)}
 .primary{display:inline-flex;align-items:center;gap:24px;padding:11px 18px;border:0;border-radius:9px;background:var(--green);color:white;font-weight:700;margin-top:25px}
 .primary:hover{background:#396448}
 #goods{scroll-margin-top:24px}
-.section-head,.filters,.card-bottom,footer{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.section-head,.filters,.card-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .section-head p{color:var(--muted);margin:0}
 .section-head h2,.dialog-body h2{font-size:36px;line-height:1.2;letter-spacing:-.045em;margin:0 0 9px}
 .search{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:9px;padding:7px 12px;background:#fff}
@@ -41,7 +39,6 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #7589
 .card-bottom strong,.detail-price strong{font-size:24px;color:var(--green)}
 .card-bottom span{font-size:12px;color:var(--muted)}
 .empty{grid-column:1/-1;padding:30px;text-align:center;border:1px dashed var(--border)}
-footer{margin-top:64px!important;padding:21px 0;border-top:1px solid var(--border);color:var(--muted)}
 dialog{width:min(570px,calc(100% - 30px));max-height:90dvh;border:0;border-radius:18px;padding:0;color:var(--ink);background:var(--paper)}
 dialog::backdrop{background:#141d17aa}
 .close{position:absolute;z-index:1;right:12px;top:12px;border:1px solid var(--border);background:var(--paper);border-radius:50%;font-size:24px;line-height:1;width:36px;height:36px}
@@ -55,9 +52,13 @@ dialog::backdrop{background:#141d17aa}
 .dialog-body a{text-decoration:underline}
 .detail-price{display:flex;align-items:center;gap:14px}
 .media-actions{margin-bottom:16px}
-main.wrap{padding-top:36px}
+main.wrap{padding:36px 0 56px}
 .catalog-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 @media(max-width:780px){.wrap{width:calc(100% - 36px)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:650px){main.wrap{padding-top:23px}.section-head{align-items:flex-start;flex-direction:column}.section-head h2{font-size:29px}.grid{gap:10px}.card-body{padding:10px}.card h3{font-size:15px}.card-bottom strong{font-size:18px}.card-bottom span{font-size:10px}.pill{padding:6px 9px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 .dialog-body p{white-space:pre-line;overflow-wrap:anywhere}
+
+#channels{display:grid;gap:8px;margin-top:16px}
+#channels a{display:block;padding:9px 14px;border:1px solid var(--border);border-radius:9px;color:var(--green);font-weight:700;text-decoration:none}
+#channels a:hover{border-color:var(--green)}

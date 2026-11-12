@@ -31,12 +31,24 @@ with closing(sqlite3.connect(data_dir / 'catalog.db')) as db, db:
             notes TEXT NOT NULL, image TEXT NOT NULL, video TEXT NOT NULL,
             published INTEGER NOT NULL
         );
+    """)
+    db.execute('BEGIN IMMEDIATE')
+    db.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY CHECK(id = 1),
-            email TEXT NOT NULL, phone TEXT NOT NULL, wechat TEXT NOT NULL
-        );
-        INSERT OR IGNORE INTO settings VALUES (1, '', '', '');
+            email TEXT NOT NULL DEFAULT '', whatsapp TEXT NOT NULL DEFAULT '',
+            telegram TEXT NOT NULL DEFAULT ''
+        )
     """)
+    columns = {row[1] for row in db.execute('PRAGMA table_info(settings)')}
+    for column in ('whatsapp', 'telegram'):
+        if column not in columns:
+            db.execute(f"ALTER TABLE settings ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
+    if not db.execute('SELECT 1 FROM settings WHERE id = 1').fetchone():
+        if 'phone' in columns:
+            db.execute("INSERT INTO settings (id, email, phone, wechat) VALUES (1, '', '', '')")
+        else:
+            db.execute('INSERT INTO settings (id) VALUES (1)')
 
 
 CATEGORIES = ('家居家具', '数码电器', '运动户外', '服饰鞋包', '母婴用品', '图书文具', '交通工具', '其他')
@@ -101,7 +113,7 @@ def catalog():
         items = [dict(row) for row in db.execute(
             'SELECT * FROM items WHERE published = 1 ORDER BY rowid DESC'
         )]
-        seller = dict(db.execute('SELECT email, phone, wechat FROM settings WHERE id = 1').fetchone())
+        seller = dict(db.execute('SELECT email, whatsapp, telegram FROM settings WHERE id = 1').fetchone())
     for item in items:
         for field in ('image', 'video'):
             item[field] = url_for('media', filename=item[field]) if item[field] else ''
@@ -146,11 +158,24 @@ def admin():
 
 @app.post('/admin/contact')
 def contact():
-    fields = tuple(request.form.get(key, '').strip() for key in ('email', 'phone', 'wechat'))
-    if any(len(value) > 200 for value in fields):
-        abort(400, '联系方式最多 200 字。')
+    email = request.form.get('email', '').strip()
+    whatsapp = re.sub(r'[+ ()-]', '', request.form.get('whatsapp', '').strip())
+    telegram = request.form.get('telegram', '').strip().removeprefix('@')
+    error = None
+    if email and (len(email) > 200 or not re.fullmatch(r'[^@\s]+@[^@\s]+', email)):
+        error = '请输入有效的邮箱地址。'
+    elif whatsapp and not re.fullmatch(r'[1-9][0-9]{6,14}', whatsapp):
+        error = '请输入含国家区号的 WhatsApp 号码。'
+    elif telegram and not re.fullmatch(r'[A-Za-z0-9_]{5,32}', telegram):
+        error = '请输入 Telegram 用户名。'
+    if error:
+        with connection() as db:
+            items = db.execute('SELECT * FROM items ORDER BY rowid DESC').fetchall()
+        seller = {key: request.form.get(key, '') for key in ('email', 'whatsapp', 'telegram')}
+        return render_template('admin.html', items=items, seller=seller, contact_error=error), 400
     with connection() as db, db:
-        db.execute('UPDATE settings SET email = ?, phone = ?, wechat = ? WHERE id = 1', fields)
+        db.execute('UPDATE settings SET email = ?, whatsapp = ?, telegram = ? WHERE id = 1',
+                   (email, whatsapp, telegram))
     return redirect(url_for('admin'))
 
 
