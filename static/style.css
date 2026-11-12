@@ -15,7 +15,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:3px solid #7589
 #goods{scroll-margin-top:24px}
 .section-head,.filters,.card-bottom{display:flex;justify-content:space-between;align-items:center;gap:12px}
 .section-head p{color:var(--muted);margin:0}
-.section-head h2,.dialog-body h2{font-size:36px;line-height:1.2;letter-spacing:-.045em;margin:0 0 9px}
+.section-head h1,.dialog-body h2{font-size:36px;line-height:1.2;letter-spacing:-.045em;margin:0 0 9px}
 .search{display:flex;align-items:center;gap:10px;border:1px solid var(--border);border-radius:9px;padding:7px 12px;background:#fff}
 .search span{font-size:23px;line-height:1}
 .search input{width:145px;border:0;background:transparent}
@@ -55,7 +55,7 @@ dialog::backdrop{background:#141d17aa}
 main.wrap{padding:36px 0 56px}
 .catalog-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
 @media(max-width:780px){.wrap{width:calc(100% - 36px)}.grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
-@media(max-width:650px){main.wrap{padding-top:23px}.section-head{align-items:flex-start;flex-direction:column}.section-head h2{font-size:29px}.grid{gap:10px}.card-body{padding:10px}.card h3{font-size:15px}.card-bottom strong{font-size:18px}.card-bottom span{font-size:10px}.pill{padding:6px 9px}}
+@media(max-width:650px){main.wrap{padding-top:23px}.section-head{align-items:flex-start;flex-direction:column}.section-head h1{font-size:29px}.grid{gap:10px}.card-body{padding:10px}.card h3{font-size:15px}.card-bottom strong{font-size:18px}.card-bottom span{font-size:10px}.pill{padding:6px 9px}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition:none!important}}
 .dialog-body p{white-space:pre-line;overflow-wrap:anywhere}
 
