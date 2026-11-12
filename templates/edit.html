@@ -29,6 +29,11 @@
   </label>
   <label>详细介绍<textarea name="description" required maxlength="4000" rows="5">{{ item.description }}</textarea></label>
   <label>看货说明<textarea name="notes" maxlength="2000" rows="3">{{ item.notes }}</textarea></label>
+  <button type="button" class="line" id="auto-translate" data-url="{{ url_for('translate') }}">自动翻译为英文</button>
+  <p id="translation-status" role="status" hidden></p>
+  <label>英文商品名称（可选）<input name="name_en" maxlength="160" value="{{ item.name_en }}"></label>
+  <label>英文介绍（可选）<textarea name="description_en" maxlength="4000" rows="4">{{ item.description_en }}</textarea></label>
+  <label>英文看货说明（可选）<textarea name="notes_en" maxlength="2000" rows="3">{{ item.notes_en }}</textarea></label>
   <label>商品照片（JPG、PNG、WebP，可多选）
     <input name="image" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
   </label>
@@ -55,4 +60,5 @@
   </div>
 </form>
 <script src="{{ url_for('static', filename='upload-size.js', v=2) }}" defer></script>
+<script src="{{ url_for('static', filename='translate.js') }}" defer></script>
 {% endblock %}

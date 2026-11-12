@@ -6,6 +6,7 @@ import secrets
 import sqlite3
 from contextlib import closing
 from pathlib import Path
+from urllib.request import Request, urlopen
 from uuid import uuid4
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
@@ -25,6 +26,10 @@ admin_password = os.environ['ADMIN_PASSWORD'].encode()
 if len(admin_password) < 12 or len(app.secret_key) < 32:
     raise RuntimeError('Set ADMIN_PASSWORD (12+ characters) and SESSION_SECRET (32+ characters).')
 
+TRANSLATE_URL = os.getenv('TRANSLATE_URL', '').strip()
+TRANSLATE_API_KEY = os.getenv('TRANSLATE_API_KEY', '')
+ENGLISH_FIELDS = {'name_en': 160, 'description_en': 4000, 'notes_en': 2000}
+
 data_dir = Path(os.getenv('DATA_DIR', '/data'))
 uploads = data_dir / 'media'
 uploads.mkdir(parents=True, exist_ok=True)
@@ -41,6 +46,9 @@ with closing(sqlite3.connect(data_dir / 'catalog.db')) as db, db:
     item_columns = {row[1] for row in db.execute('PRAGMA table_info(items)')}
     if 'extra_images' not in item_columns:
         db.execute("ALTER TABLE items ADD COLUMN extra_images TEXT NOT NULL DEFAULT '[]'")
+    for column in ENGLISH_FIELDS:
+        if column not in item_columns:
+            db.execute(f"ALTER TABLE items ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
     if 'sort_order' not in item_columns:
         db.execute('ALTER TABLE items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0')
     db.execute("""
@@ -179,6 +187,34 @@ def admin():
     return render_template('admin.html', items=items, seller=seller)
 
 
+@app.post('/admin/translate')
+def translate():
+    texts = {key: request.form.get(key, '').strip() for key in ENGLISH_FIELDS}
+    texts = {key: value for key, value in texts.items() if value}
+    if not texts or any(len(value) > ENGLISH_FIELDS[key] for key, value in texts.items()):
+        return jsonify(error='请填写要翻译的中文内容，并检查长度。'), 400
+    if not TRANSLATE_URL:
+        return jsonify(error='翻译服务尚未配置。请设置 TRANSLATE_URL。'), 503
+
+    payload = dict(q=list(texts.values()), source='zh', target='en', format='text')
+    if TRANSLATE_API_KEY:
+        payload['api_key'] = TRANSLATE_API_KEY
+    try:
+        upstream = Request(TRANSLATE_URL, data=json.dumps(payload).encode(),
+                           headers={'Content-Type': 'application/json'})
+        with urlopen(upstream, timeout=25) as response:
+            translated = json.loads(response.read(128 * 1024))['translatedText']
+        if not isinstance(translated, list) or len(translated) != len(texts):
+            raise ValueError('Unexpected translation response')
+        result = dict(zip(texts, translated))
+        if any(not isinstance(value, str) or not value.strip() or len(value) > ENGLISH_FIELDS[key]
+               for key, value in result.items()):
+            return jsonify(error='译文为空或超过字段长度，请缩短中文内容后重试。'), 422
+    except (OSError, ValueError, KeyError, TypeError):
+        return jsonify(error='翻译服务暂时不可用，请稍后重试或手动填写英文。'), 502
+    return jsonify(translations=result)
+
+
 @app.post('/admin/contact')
 def contact():
     email = request.form.get('email', '').strip()
@@ -233,6 +269,8 @@ def edit(item_id):
     item.update({key: request.form.get(key, '').strip() for key in (
         'name', 'category', 'price', 'condition', 'description', 'notes'
     )})
+    for key in ENGLISH_FIELDS:
+        item[key] = request.form.get(key, item.get(key, '')).strip()
     sort_order = request.form.get('sort_order')
     if sort_order is not None:
         item['sort_order'] = sort_order.strip() or '0'
@@ -251,6 +289,8 @@ def edit(item_id):
             raise ValueError('瓦图价格须填写 0 到 999999999 的整数。')
         if not 1 <= len(item['description']) <= 4000 or len(item['notes']) > 2000:
             raise ValueError('请填写商品介绍，并确保介绍和看货说明符合长度限制。')
+        if any(len(item[key]) > limit for key, limit in ENGLISH_FIELDS.items()):
+            raise ValueError('英文内容超过长度限制。')
         pending_images = [(file, upload_type('image', file))
                           for file in request.files.getlist('image') if file.filename]
         video = request.files.get('video')
@@ -289,14 +329,16 @@ def edit(item_id):
             old_video = current['video'] if current else ''
             item['video'] = save_upload(pending_video) if pending_video else old_video
             db.execute("""
-                INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images,sort_order)
+                INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images,sort_order,
+                    name_en,description_en,notes_en)
                 VALUES (:id,:name,:category,:price,:condition,:description,
-                    :notes,:image,:video,:published,:extra_images,:sort_order)
+                    :notes,:image,:video,:published,:extra_images,:sort_order,:name_en,:description_en,:notes_en)
                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
                     price=excluded.price, condition=excluded.condition, description=excluded.description,
                     notes=excluded.notes, image=excluded.image, video=excluded.video,
                     published=excluded.published, extra_images=excluded.extra_images,
-                    sort_order=excluded.sort_order
+                    sort_order=excluded.sort_order, name_en=excluded.name_en,
+                    description_en=excluded.description_en, notes_en=excluded.notes_en
             """, item)
     except ValueError as error:
         return item_form(item, error=str(error)), 400

@@ -22,6 +22,10 @@ docker compose up -d --build
 
 默认只绑定主机的本地地址。部署到公网时，可通过 HTTPS 反向代理转发到 8000 端口，在 `.env` 设置 `SECURE_COOKIES=1`。
 
+## 自动翻译
+
+后台编辑商品时，可将中文名称、介绍和看货说明翻译到空白的英文栏。校对后保存即可。在 `.env` 中将 `TRANSLATE_URL` 设为支持中文到英文的 LibreTranslate 服务的完整 `/translate` 地址。若服务要求密钥，再设置 `TRANSLATE_API_KEY`。应用通过服务器发送所选商品文字，密钥只在服务器端使用。修改配置后运行 `docker compose up -d`。
+
 ## 上传限制
 
 照片和视频共用单次请求上限，默认为 256 MiB，可在 `.env` 中设置 `UPLOAD_MAX_MIB`。修改后运行 `docker compose up -d --build`。反向代理的请求体限制也需覆盖该值，例如 Nginx 对应站点可设置 `client_max_body_size 256m;`。如果公网入口有固定上限，需压缩视频，或先发布商品照片，再编辑商品单独上传视频。
