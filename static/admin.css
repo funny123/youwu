@@ -1,0 +1,15 @@
+.manage{max-width:780px;padding:32px 0 70px}
+.manage h1,.manage h2{margin:0 0 12px}
+.manage-head,.manage-row,.toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.manage-head,.manage-row{justify-content:space-between}
+.manage-row{border-top:1px solid var(--border);padding:12px 0}
+.manage-row small{display:block;color:var(--muted)}
+.manage .primary{margin:0}
+.panel{margin:18px 0;padding:24px;border:1px solid var(--border);border-radius:15px;background:#fff}
+.fields,.login{display:grid;gap:14px;justify-items:start}
+.login{max-width:430px;margin:8vh auto}
+.fields label,.login label{width:100%;display:grid;gap:5px;font-weight:700}
+.fields input,.fields select,.fields textarea,.login input{width:100%;padding:9px;border:1px solid var(--border);border-radius:7px;font:inherit;color:inherit}
+.fields textarea{resize:vertical}
+.admin-photo{max-width:200px;max-height:130px}
+.error{color:#a62d21;margin:0}

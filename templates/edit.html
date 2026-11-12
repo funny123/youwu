@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+{% block title %}{{ '编辑商品' if item.id else '添加商品' }}{% endblock %}
+{% block content %}
+<header class="manage-head"><h1>{{ '编辑商品' if item.id else '添加商品' }}</h1><a class="line" href="{{ url_for('admin') }}">返回管理</a></header>
+<form class="panel fields" method="post" enctype="multipart/form-data">
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>商品名称<input name="name" required maxlength="80" value="{{ item.name }}"></label>
+  <label>分类
+    <select name="category" required>
+      <option value="" disabled{% if not item.category %} selected{% endif %}>请选择分类</option>
+      {% for option in categories %}
+      <option value="{{ option }}"{% if option == item.category %} selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>价格（VT）<input name="price" type="number" min="0" max="999999999" step="1" required value="{{ item.price }}"></label>
+  <label>成色
+    <select name="condition" required>
+      <option value="" disabled{% if not item.condition %} selected{% endif %}>请选择成色</option>
+      {% for option in conditions %}
+      <option value="{{ option }}"{% if option == item.condition %} selected{% endif %}>{{ option }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>详细介绍<textarea name="description" required maxlength="4000" rows="5">{{ item.description }}</textarea></label>
+  <label>看货说明<textarea name="notes" maxlength="2000" rows="3">{{ item.notes }}</textarea></label>
+  <label>商品照片（JPG、PNG、WebP）<input name="image" type="file" accept=".jpg,.jpeg,.png,.webp"></label>
+  {% if item.image %}<img class="admin-photo" src="{{ url_for('media', filename=item.image) }}" alt="当前商品照片">{% endif %}
+  <label>商品视频（MP4，可选）<input name="video" type="file" accept=".mp4"></label>
+  {% if item.video %}<a href="{{ url_for('media', filename=item.video) }}">查看已上传视频 ↗</a>{% endif %}
+  <p>单次表单上传上限为 100 MB。</p>
+  <div class="toolbar">
+    <button class="line" name="published" value="0">保存为草稿</button>
+    <button class="primary" name="published" value="1">{{ '保存并更新' if item.published else '发布商品' }}</button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block title %}管理员登录{% endblock %}
+{% block content %}
+<form class="panel login" method="post">
+  <h1>商品管理</h1>
+  {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>管理员密码<input type="password" name="password" autocomplete="current-password" autofocus required></label>
+  <button class="primary">登录</button>
+  <a class="line" href="/">返回商品页</a>
+</form>
+{% endblock %}

@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}商品管理{% endblock %}
+{% block content %}
+<header class="manage-head">
+  <h1>商品管理</h1>
+  <div class="toolbar">
+    <a class="primary" href="{{ url_for('edit') }}">添加商品</a>
+    <a class="line" href="/">查看商品页 ↗</a>
+    <form method="post" action="{{ url_for('logout') }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="line">退出</button></form>
+  </div>
+</header>
+<section class="panel">
+  <h2>商品</h2>
+  {% for item in items %}
+  <article class="manage-row">
+    <div><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.price }} VT · {{ '已发布' if item.published else '未发布' }}</small></div>
+    <div class="toolbar">
+      <a class="line" href="{{ url_for('edit', item_id=item.id) }}">编辑</a>
+      {% if item.published %}
+      <form method="post" action="{{ url_for('unpublish', item_id=item.id) }}"><input type="hidden" name="csrf" value="{{ csrf_token() }}"><button class="line">下架</button></form>
+      {% endif %}
+    </div>
+  </article>
+  {% else %}
+  <p>还没有商品。添加商品后可先保存为草稿。</p>
+  {% endfor %}
+</section>
+<form class="panel fields" method="post" action="{{ url_for('contact') }}">
+  <h2>卖家联系方式</h2>
+  <input type="hidden" name="csrf" value="{{ csrf_token() }}">
+  <label>邮箱<input type="email" name="email" value="{{ seller.email }}" maxlength="200"></label>
+  <label>电话<input type="tel" name="phone" value="{{ seller.phone }}" maxlength="200"></label>
+  <label>微信<input name="wechat" value="{{ seller.wechat }}" maxlength="200"></label>
+  <button class="primary">保存联系方式</button>
+</form>
+{% endblock %}

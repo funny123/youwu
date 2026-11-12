@@ -1,0 +1,14 @@
+services:
+  youwu:
+    build: .
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-8000}:8000"
+    environment:
+      ADMIN_PASSWORD: "${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}"
+      SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
+      SECURE_COOKIES: "${SECURE_COOKIES:-0}"
+    volumes:
+      - catalog:/data
+    restart: unless-stopped
+volumes:
+  catalog:
