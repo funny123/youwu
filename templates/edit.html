@@ -2,7 +2,7 @@
 {% block title %}{{ '编辑商品' if item.id else '添加商品' }}{% endblock %}
 {% block content %}
 <header class="manage-head"><h1>{{ '编辑商品' if item.id else '添加商品' }}</h1><a class="line" href="{{ url_for('admin') }}">返回管理</a></header>
-<form class="panel fields" method="post" enctype="multipart/form-data">
+<form class="panel fields" id="item-form" data-upload-max-mib="{{ upload_max_mib }}" method="post" enctype="multipart/form-data">
   {% if error %}<p class="error" role="alert">{{ error }}</p>{% endif %}
   <input type="hidden" name="csrf" value="{{ csrf_token() }}">
   <label>商品名称<input name="name" required maxlength="80" value="{{ item.name }}"></label>
@@ -41,10 +41,12 @@
   <p>第一张保留的照片用作封面，新照片会追加到末尾。</p>
   <label>商品视频（MP4，可选）<input name="video" type="file" accept=".mp4"></label>
   {% if item.video %}<a href="{{ url_for('media', filename=item.video) }}">查看已上传视频 ↗</a>{% endif %}
-  <p>单次表单上传上限为 100 MB。</p>
+  <p>照片和视频合计每次最多 {{ upload_max_mib }} MiB。</p>
+  <p id="upload-size-error" class="error" role="alert" hidden></p>
   <div class="toolbar">
     <button class="line" name="published" value="0">保存为草稿</button>
     <button class="primary" name="published" value="1">{{ '保存并更新' if item.published else '发布商品' }}</button>
   </div>
 </form>
+<script src="{{ url_for('static', filename='upload-size.js') }}" defer></script>
 {% endblock %}

@@ -7,6 +7,7 @@ services:
       ADMIN_PASSWORD: "${ADMIN_PASSWORD:?set ADMIN_PASSWORD in .env}"
       SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
       SECURE_COOKIES: "${SECURE_COOKIES:-0}"
+      UPLOAD_MAX_MIB: "${UPLOAD_MAX_MIB:-256}"
     volumes:
       - catalog:/data
     restart: unless-stopped

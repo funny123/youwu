@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}上传超出限制{% endblock %}
+{% block content %}
+<section class="panel">
+  <h1>这次上传的文件太大</h1>
+  <p>照片和视频合计每次最多 {{ upload_max_mib }} MiB。请返回表单，减少照片数量或压缩视频后再提交。</p>
+  <a class="line" href="{{ url_for('admin') }}">返回商品管理</a>
+</section>
+{% endblock %}

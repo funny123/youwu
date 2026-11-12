@@ -10,10 +10,14 @@ from uuid import uuid4
 
 from flask import Flask, abort, jsonify, redirect, render_template, request, send_from_directory, session, url_for
 
+UPLOAD_MAX_MIB = int(os.getenv('UPLOAD_MAX_MIB', '256'))
+if UPLOAD_MAX_MIB <= 0:
+    raise RuntimeError('UPLOAD_MAX_MIB must be a positive integer.')
+
 app = Flask(__name__, static_url_path='/static')
 app.config.update(
     SECRET_KEY=os.environ['SESSION_SECRET'],
-    MAX_CONTENT_LENGTH=100 * 1024 * 1024,
+    MAX_CONTENT_LENGTH=UPLOAD_MAX_MIB * 1024 * 1024,
     SESSION_COOKIE_SAMESITE='Lax',
     SESSION_COOKIE_SECURE=os.getenv('SECURE_COOKIES') == '1',
 )
@@ -85,7 +89,12 @@ def csrf_token():
     return session['csrf']
 
 
-app.jinja_env.globals['csrf_token'] = csrf_token
+app.jinja_env.globals.update(csrf_token=csrf_token, upload_max_mib=UPLOAD_MAX_MIB)
+
+
+@app.errorhandler(413)
+def upload_too_large(_error):
+    return render_template('upload_error.html'), 413
 
 
 @app.before_request
