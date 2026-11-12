@@ -42,6 +42,8 @@
   <label>商品视频（MP4，可选）<input name="video" type="file" accept=".mp4"></label>
   {% if item.video %}<a href="{{ url_for('media', filename=item.video) }}">查看已上传视频 ↗</a>{% endif %}
   <p>照片和视频合计每次最多 {{ upload_max_mib }} MiB。</p>
+  <p>提交时会自动压缩较大的照片。</p>
+  <p id="upload-status" role="status"></p>
   <p id="upload-size-error" class="error" role="alert" hidden></p>
   <div class="toolbar">
     <button class="line" name="published" value="0">保存为草稿</button>
