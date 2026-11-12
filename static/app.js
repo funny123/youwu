@@ -17,7 +17,7 @@ const english = new Map(Object.entries({
   '商品暂时无法加载，请刷新页面重试。': 'Unable to load items. Refresh to try again.',
   '发送邮件': 'Send email', '打开 WhatsApp': 'Open WhatsApp', '打开 Telegram': 'Open Telegram',
   '卖家暂未填写联系方式。': 'No contact details available.', '物品介绍': 'Description', '看货说明': 'Viewing and pickup',
-  '全部': 'All', '家居家具': 'Home & Furniture', '数码电器': 'Electronics & Appliances',
+  '购买日期': 'Purchase date', '全部': 'All', '家居家具': 'Home & Furniture', '数码电器': 'Electronics & Appliances',
   '运动户外': 'Sports & Outdoors', '服饰鞋包': 'Clothing & Accessories', '母婴用品': 'Baby & Kids',
   '图书文具': 'Books & Stationery', '交通工具': 'Vehicles', '其他': 'Other',
   '全新未使用': 'New and unused', '几乎全新': 'Like new', '外观良好': 'Good condition',
@@ -29,9 +29,22 @@ let catalogFailed = false;
 const t = text => language === 'en' ? (english.get(text) ?? text) : text;
 const localized = (item, field) => language === 'en' && item[field + '_en'] ? item[field + '_en'] : item[field];
 
+function productTitle(item) {
+  const englishName = item.name_en?.trim();
+  if (!englishName || item.name.toLowerCase().includes(englishName.toLowerCase())) {
+    return html(item.name);
+  }
+  return `${html(item.name)} <span class="english-name" lang="en">${html(englishName)}</span>`;
+}
+
+function purchaseDateLabel(item) {
+  if (!item.purchase_date) return '';
+  const value = html(item.purchase_date);
+  return `<span class="condition purchase-date">${t('购买日期')} <time datetime="${value}">${value}</time></span>`;
+}
+
 function renderLanguage() {
   document.documentElement.lang = language;
-  document.title = byId('catalog-title').textContent = t('闲置商品');
   byId('contact').textContent = t('联系卖家') + ' ↗';
   byId('search').placeholder = t('搜索物品');
   byId('search').setAttribute('aria-label', t('搜索物品'));
@@ -66,7 +79,7 @@ function render() {
     <article class="card">
       <button class="listing" data-id="${html(item.id)}">
         <div class="photo"><img src="${html(item.image)}" alt="" loading="lazy">${item.video ? `<span class="media-badge">▶ ${t('视频')}</span>` : ''}</div>
-        <div class="card-body"><span class="condition">${html(t(item.condition))}</span><h3>${html(localized(item, 'name'))}</h3>
+        <div class="card-body"><span class="condition">${html(t(item.condition))}</span>${purchaseDateLabel(item)}<h3>${productTitle(item)}</h3>
           <div class="card-bottom"><strong>${item.price} VT</strong><span>${t('查看详情')} ↗</span></div>
         </div>
       </button>
@@ -106,8 +119,9 @@ function showItem(id) {
         ${item.images.map((url, index) => `<button type="button" class="thumbnail" data-photo="${index}" aria-label="${t('查看照片')} ${index + 1}" aria-pressed="${index === 0}"><img src="${html(url)}" alt=""></button>`).join('')}
         ${item.video ? `<button type="button" class="pill" data-video aria-pressed="false">${t('视频')}</button>` : ''}
       </div>` : ''}
-      <h2 id="dialog-title">${html(localized(item, 'name'))}</h2>
+      <h2 id="dialog-title">${productTitle(item)}</h2>
       <div class="detail-price"><strong>${item.price} VT</strong><span class="condition">${html(t(item.condition))}</span></div>
+      ${purchaseDateLabel(item)}
       <h3>${t('物品介绍')}</h3><p>${html(localized(item, 'description'))}</p>
       ${localized(item, 'notes') ? `<h3>${t('看货说明')}</h3><p>${html(localized(item, 'notes'))}</p>` : ''}
       <button class="primary" id="item-contact">${t('联系卖家')} ↗</button>

@@ -5,6 +5,7 @@ import re
 import secrets
 import sqlite3
 from contextlib import closing
+from datetime import date
 from pathlib import Path
 from urllib.request import Request, urlopen
 from uuid import uuid4
@@ -46,7 +47,7 @@ with closing(sqlite3.connect(data_dir / 'catalog.db')) as db, db:
     item_columns = {row[1] for row in db.execute('PRAGMA table_info(items)')}
     if 'extra_images' not in item_columns:
         db.execute("ALTER TABLE items ADD COLUMN extra_images TEXT NOT NULL DEFAULT '[]'")
-    for column in ENGLISH_FIELDS:
+    for column in (*ENGLISH_FIELDS, 'purchase_date'):
         if column not in item_columns:
             db.execute(f"ALTER TABLE items ADD COLUMN {column} TEXT NOT NULL DEFAULT ''")
     if 'sort_order' not in item_columns:
@@ -271,6 +272,8 @@ def edit(item_id):
     )})
     for key in ENGLISH_FIELDS:
         item[key] = request.form.get(key, item.get(key, '')).strip()
+    purchase_date = request.form.get('purchase_date')
+    item['purchase_date'] = (purchase_date or '').strip()
     sort_order = request.form.get('sort_order')
     if sort_order is not None:
         item['sort_order'] = sort_order.strip() or '0'
@@ -291,6 +294,13 @@ def edit(item_id):
             raise ValueError('请填写商品介绍，并确保介绍和看货说明符合长度限制。')
         if any(len(item[key]) > limit for key, limit in ENGLISH_FIELDS.items()):
             raise ValueError('英文内容超过长度限制。')
+        if item['purchase_date']:
+            try:
+                parsed = date.fromisoformat(item['purchase_date'])
+                if parsed.isoformat() != item['purchase_date']:
+                    raise ValueError
+            except ValueError:
+                raise ValueError('请选择有效的购买日期。') from None
         pending_images = [(file, upload_type('image', file))
                           for file in request.files.getlist('image') if file.filename]
         video = request.files.get('video')
@@ -310,6 +320,8 @@ def edit(item_id):
                 abort(404)
             if sort_order is None:
                 item['sort_order'] = current['sort_order'] if current else 0
+            if purchase_date is None and current:
+                item['purchase_date'] = current['purchase_date']
             old_images = photos(dict(current)) if current else []
             kept = [name for name in old_images if name not in remove]
             if item['published'] and not (kept or pending_images):
@@ -330,15 +342,15 @@ def edit(item_id):
             item['video'] = save_upload(pending_video) if pending_video else old_video
             db.execute("""
                 INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images,sort_order,
-                    name_en,description_en,notes_en)
+                    name_en,description_en,notes_en,purchase_date)
                 VALUES (:id,:name,:category,:price,:condition,:description,
-                    :notes,:image,:video,:published,:extra_images,:sort_order,:name_en,:description_en,:notes_en)
+                    :notes,:image,:video,:published,:extra_images,:sort_order,:name_en,:description_en,:notes_en,:purchase_date)
                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
                     price=excluded.price, condition=excluded.condition, description=excluded.description,
                     notes=excluded.notes, image=excluded.image, video=excluded.video,
                     published=excluded.published, extra_images=excluded.extra_images,
                     sort_order=excluded.sort_order, name_en=excluded.name_en,
-                    description_en=excluded.description_en, notes_en=excluded.notes_en
+                    description_en=excluded.description_en, notes_en=excluded.notes_en, purchase_date=excluded.purchase_date
             """, item)
     except ValueError as error:
         return item_form(item, error=str(error)), 400

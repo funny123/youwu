@@ -65,3 +65,5 @@ main.wrap{padding:36px 0 56px}
 .thumbnail{width:62px;height:50px;padding:2px;border:2px solid transparent;border-radius:8px;background:transparent}
 .thumbnail[aria-pressed=true]{border-color:var(--green)}
 .thumbnail img{display:block;width:100%;height:100%;object-fit:cover;border-radius:4px}
+#catalog-title span,.english-name{display:block;color:var(--muted);font-size:.72em;font-weight:600;letter-spacing:normal;margin-top:4px}
+.purchase-date{display:inline-block;margin:4px 0 0 4px}

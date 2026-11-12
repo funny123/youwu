@@ -27,6 +27,7 @@
       {% endfor %}
     </select>
   </label>
+  <label>购买日期（可选）<input type="date" name="purchase_date" value="{{ item.purchase_date }}"></label>
   <label>详细介绍<textarea name="description" required maxlength="4000" rows="5">{{ item.description }}</textarea></label>
   <label>看货说明<textarea name="notes" maxlength="2000" rows="3">{{ item.notes }}</textarea></label>
   <button type="button" class="line" id="auto-translate" data-url="{{ url_for('translate') }}">自动翻译为英文</button>
