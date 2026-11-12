@@ -25,8 +25,20 @@
   </label>
   <label>详细介绍<textarea name="description" required maxlength="4000" rows="5">{{ item.description }}</textarea></label>
   <label>看货说明<textarea name="notes" maxlength="2000" rows="3">{{ item.notes }}</textarea></label>
-  <label>商品照片（JPG、PNG、WebP）<input name="image" type="file" accept=".jpg,.jpeg,.png,.webp"></label>
-  {% if item.image %}<img class="admin-photo" src="{{ url_for('media', filename=item.image) }}" alt="当前商品照片">{% endif %}
+  <label>商品照片（JPG、PNG、WebP，可多选）
+    <input name="image" type="file" accept=".jpg,.jpeg,.png,.webp" multiple>
+  </label>
+  {% if photos %}
+  <div class="admin-photos">
+    {% for photo in photos %}
+    <label>
+      <img class="admin-photo" src="{{ url_for('media', filename=photo) }}" alt="商品照片 {{ loop.index }}">
+      <span><input type="checkbox" name="remove_image" value="{{ photo }}"> 移除{{ '封面' if loop.first else '照片' }}</span>
+    </label>
+    {% endfor %}
+  </div>
+  {% endif %}
+  <p>第一张保留的照片用作封面，新照片会追加到末尾。</p>
   <label>商品视频（MP4，可选）<input name="video" type="file" accept=".mp4"></label>
   {% if item.video %}<a href="{{ url_for('media', filename=item.video) }}">查看已上传视频 ↗</a>{% endif %}
   <p>单次表单上传上限为 100 MB。</p>

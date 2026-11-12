@@ -13,3 +13,7 @@
 .fields textarea{resize:vertical}
 .admin-photo{max-width:200px;max-height:130px}
 .error{color:#a62d21;margin:0}
+.admin-photos{display:flex;flex-wrap:wrap;gap:12px}
+.admin-photos label{width:120px}
+.admin-photos input{width:auto}
+.admin-photos .admin-photo{width:120px;height:84px;object-fit:cover;border-radius:7px}

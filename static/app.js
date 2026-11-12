@@ -57,7 +57,10 @@ function showItem(id) {
   detail.innerHTML = `
     <div class="detail-media"><img src="${html(item.image)}" alt="${html(item.name)}照片">${item.video ? `<video controls hidden playsinline preload="none" src="${html(item.video)}" poster="${html(item.image)}" aria-label="${html(item.name)}视频"></video>` : ''}</div>
     <div class="dialog-body">
-      ${item.video ? `<div class="media-actions"><button class="pill" aria-pressed="true">照片</button><button class="pill" aria-pressed="false">视频</button></div>` : ''}
+      ${item.images.length > 1 || item.video ? `<div class="media-actions">
+        ${item.images.map((url, index) => `<button type="button" class="thumbnail" data-photo="${index}" aria-label="查看照片 ${index + 1}" aria-pressed="${index === 0}"><img src="${html(url)}" alt=""></button>`).join('')}
+        ${item.video ? '<button type="button" class="pill" data-video aria-pressed="false">视频</button>' : ''}
+      </div>` : ''}
       <h2 id="dialog-title">${html(item.name)}</h2>
       <div class="detail-price"><strong>${item.price} VT</strong><span class="condition">${html(item.condition)}</span></div>
       <h3>物品介绍</h3><p>${html(item.description)}</p>
@@ -66,12 +69,16 @@ function showItem(id) {
     </div>`;
   const video = detail.querySelector('video');
   const photo = detail.querySelector('img');
-  const tabs = [...detail.querySelectorAll('.pill')];
-  tabs.forEach((tab, index) => tab.addEventListener('click', () => {
-    photo.hidden = index === 1;
-    video.hidden = index === 0;
-    if (video.hidden) video.pause();
-    tabs.forEach((entry, position) => entry.setAttribute('aria-pressed', String(index === position)));
+  const tabs = [...detail.querySelectorAll('.media-actions button')];
+  tabs.forEach(tab => tab.addEventListener('click', () => {
+    const showVideo = tab.hasAttribute('data-video');
+    photo.hidden = showVideo;
+    if (!showVideo) photo.src = item.images[Number(tab.dataset.photo)];
+    if (video) {
+      video.hidden = !showVideo;
+      if (!showVideo) video.pause();
+    }
+    tabs.forEach(entry => entry.setAttribute('aria-pressed', String(entry === tab)));
   }));
   byId('item-contact').addEventListener('click', showContact);
   dialog.showModal();

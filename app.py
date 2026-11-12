@@ -1,4 +1,5 @@
 import hmac
+import json
 import os
 import re
 import secrets
@@ -33,6 +34,8 @@ with closing(sqlite3.connect(data_dir / 'catalog.db')) as db, db:
         );
     """)
     db.execute('BEGIN IMMEDIATE')
+    if 'extra_images' not in {row[1] for row in db.execute('PRAGMA table_info(items)')}:
+        db.execute("ALTER TABLE items ADD COLUMN extra_images TEXT NOT NULL DEFAULT '[]'")
     db.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY CHECK(id = 1),
@@ -55,12 +58,16 @@ CATEGORIES = ('家居家具', '数码电器', '运动户外', '服饰鞋包', '�
 CONDITIONS = ('全新未使用', '几乎全新', '外观良好', '轻微使用痕迹', '正常使用痕迹', '明显使用痕迹', '需维修')
 
 
+def photos(item):
+    return ([item['image']] if item.get('image') else []) + json.loads(item.get('extra_images', '[]'))
+
+
 def item_form(item, error=None):
     def options(defaults, current):
         return (*defaults, current) if current and current not in defaults else defaults
 
     return render_template(
-        'edit.html', item=item, error=error,
+        'edit.html', item=item, error=error, photos=photos(item),
         categories=options(CATEGORIES, item.get('category')),
         conditions=options(CONDITIONS, item.get('condition')),
     )
@@ -115,6 +122,8 @@ def catalog():
         )]
         seller = dict(db.execute('SELECT email, whatsapp, telegram FROM settings WHERE id = 1').fetchone())
     for item in items:
+        item['images'] = [url_for('media', filename=name) for name in photos(item)]
+        del item['extra_images']
         for field in ('image', 'video'):
             item[field] = url_for('media', filename=item[field]) if item[field] else ''
     return jsonify(items=items, seller=seller)
@@ -124,7 +133,9 @@ def catalog():
 def media(filename):
     with connection() as db:
         item = db.execute(
-            'SELECT published FROM items WHERE image = ? OR video = ?', (filename, filename)
+            '''SELECT published FROM items WHERE image = ? OR video = ?
+               OR EXISTS (SELECT 1 FROM json_each(extra_images) WHERE value = ?)''',
+            (filename, filename, filename)
         ).fetchone()
     if not item or not (item['published'] or session.get('admin')):
         abort(404)
@@ -211,7 +222,7 @@ def edit(item_id):
         'name', 'category', 'price', 'condition', 'description', 'notes'
     )})
     item['published'] = int(request.form.get('published') == '1')
-    pending_files = {}
+    remove = set(request.form.getlist('remove_image'))
     try:
         for key in ('name', 'category', 'condition'):
             if not 1 <= len(item[key]) <= 80:
@@ -223,12 +234,10 @@ def edit(item_id):
             raise ValueError('瓦图价格须填写 0 到 999999999 的整数。')
         if not 1 <= len(item['description']) <= 4000 or len(item['notes']) > 2000:
             raise ValueError('请填写商品介绍，并确保介绍和看货说明符合长度限制。')
-        for field in ('image', 'video'):
-            file = request.files.get(field)
-            if file and file.filename:
-                pending_files[field] = (file, upload_type(field, file))
-        if item['published'] and not (item['image'] or 'image' in pending_files):
-            raise ValueError('发布前请上传商品照片。')
+        pending_images = [(file, upload_type('image', file))
+                          for file in request.files.getlist('image') if file.filename]
+        video = request.files.get('video')
+        pending_video = (video, upload_type('video', video)) if video and video.filename else None
     except ValueError as error:
         for key, choices in (('category', CATEGORIES), ('condition', CONDITIONS)):
             if item[key] not in choices:
@@ -242,32 +251,44 @@ def edit(item_id):
             current = db.execute('SELECT * FROM items WHERE id = ?', (item['id'],)).fetchone()
             if item_id and not current:
                 abort(404)
-            for field in ('image', 'video'):
-                if current:
-                    item[field] = current[field]
-                if field in pending_files:
-                    file, extension = pending_files[field]
-                    filename = uuid4().hex + extension
-                    path = uploads / filename
-                    saved.append(path)
-                    file.save(path)
-                    item[field] = filename
+            old_images = photos(dict(current)) if current else []
+            kept = [name for name in old_images if name not in remove]
+            if item['published'] and not (kept or pending_images):
+                raise ValueError('发布前请上传至少一张商品照片。')
+
+            def save_upload(upload):
+                file, extension = upload
+                filename = uuid4().hex + extension
+                path = uploads / filename
+                saved.append(path)
+                file.save(path)
+                return filename
+
+            images = kept + [save_upload(upload) for upload in pending_images]
+            item['image'] = images[0] if images else ''
+            item['extra_images'] = json.dumps(images[1:])
+            old_video = current['video'] if current else ''
+            item['video'] = save_upload(pending_video) if pending_video else old_video
             db.execute("""
-                INSERT INTO items VALUES (:id,:name,:category,:price,:condition,:description,
-                    :notes,:image,:video,:published)
+                INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images)
+                VALUES (:id,:name,:category,:price,:condition,:description,
+                    :notes,:image,:video,:published,:extra_images)
                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
                     price=excluded.price, condition=excluded.condition, description=excluded.description,
                     notes=excluded.notes, image=excluded.image, video=excluded.video,
-                    published=excluded.published
+                    published=excluded.published, extra_images=excluded.extra_images
             """, item)
+    except ValueError as error:
+        return item_form(item, error=str(error)), 400
     except Exception:
         for path in saved:
             path.unlink(missing_ok=True)
         raise
-    if current:
-        for field in ('image', 'video'):
-            if current[field] and current[field] != item[field]:
-                (uploads / current[field]).unlink(missing_ok=True)
+    obsolete = set(old_images) - set(images)
+    if old_video and old_video != item['video']:
+        obsolete.add(old_video)
+    for name in obsolete:
+        (uploads / name).unlink(missing_ok=True)
     return redirect(url_for('admin'))
 
 
