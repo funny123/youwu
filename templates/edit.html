@@ -32,7 +32,7 @@
   <div class="admin-photos">
     {% for photo in photos %}
     <label>
-      <img class="admin-photo" src="{{ url_for('media', filename=photo) }}" alt="商品照片 {{ loop.index }}">
+      <img class="admin-photo" loading="lazy" src="{{ url_for('media', filename=photo) }}" alt="商品照片 {{ loop.index }}">
       <span><input type="checkbox" name="remove_image" value="{{ photo }}"> 移除{{ '封面' if loop.first else '照片' }}</span>
     </label>
     {% endfor %}
@@ -50,5 +50,5 @@
     <button class="primary" name="published" value="1">{{ '保存并更新' if item.published else '发布商品' }}</button>
   </div>
 </form>
-<script src="{{ url_for('static', filename='upload-size.js') }}" defer></script>
+<script src="{{ url_for('static', filename='upload-size.js', v=2) }}" defer></script>
 {% endblock %}

@@ -1,5 +1,6 @@
 const itemForm = document.getElementById('item-form');
 const imageInput = itemForm.elements.image;
+const videoInput = itemForm.elements.video;
 const sizeError = document.getElementById('upload-size-error');
 const uploadStatus = document.getElementById('upload-status');
 const limitMiB = Number(itemForm.dataset.uploadMaxMib);
@@ -51,6 +52,8 @@ itemForm.addEventListener('change', () => {
 });
 
 itemForm.addEventListener('formdata', event => {
+  if (!videoInput.files.length) event.formData.delete('video');
+  if (!imageInput.files.length) event.formData.delete('image');
   if (!preparedImages) return;
   event.formData.delete('image');
   for (const file of preparedImages) event.formData.append('image', file);
@@ -58,6 +61,15 @@ itemForm.addEventListener('formdata', event => {
 
 itemForm.addEventListener('submit', async event => {
   if (preparedImages) return;
+  if (!imageInput.files.length) {
+    if (!validateUploadSize([])) {
+      event.preventDefault();
+      sizeError.scrollIntoView({ block: 'nearest' });
+      return;
+    }
+    uploadStatus.textContent = videoInput.files.length ? '正在上传视频…' : '正在保存商品…';
+    return;
+  }
   event.preventDefault();
   if (preparing) return;
 
@@ -66,22 +78,33 @@ itemForm.addEventListener('submit', async event => {
   const originalPhotos = [...imageInput.files];
   uploadStatus.textContent = '正在准备照片…';
   try {
-    const photos = [];
     const supportsFormDataEvent = typeof FormDataEvent === 'function';
-    for (const file of originalPhotos) {
-      photos.push(supportsFormDataEvent ? await compressPhoto(file) : file);
+    if (supportsFormDataEvent) {
+      let timer;
+      const photos = [];
+      const compressPhotos = async () => {
+        for (const file of originalPhotos) photos.push(await compressPhoto(file));
+        return photos;
+      };
+      const timeout = new Promise(resolve => { timer = setTimeout(() => resolve(originalPhotos), 12000); });
+      try {
+        preparedImages = await Promise.race([compressPhotos(), timeout]);
+      } finally {
+        clearTimeout(timer);
+      }
+    } else {
+      preparedImages = originalPhotos;
     }
     if (originalPhotos.length !== imageInput.files.length ||
         originalPhotos.some((file, index) => file !== imageInput.files[index])) {
       uploadStatus.textContent = '照片选择已变更，请重新提交。';
       return;
     }
-    if (!validateUploadSize(photos)) {
+    if (!validateUploadSize(preparedImages)) {
       uploadStatus.textContent = '';
       sizeError.scrollIntoView({ block: 'nearest' });
       return;
     }
-    preparedImages = photos;
     uploadStatus.textContent = '正在上传，请保持页面打开…';
     itemForm.requestSubmit(submitter || undefined);
   } finally {
