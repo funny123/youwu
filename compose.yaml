@@ -8,10 +8,18 @@ services:
       SESSION_SECRET: "${SESSION_SECRET:?set SESSION_SECRET in .env}"
       SECURE_COOKIES: "${SECURE_COOKIES:-0}"
       UPLOAD_MAX_MIB: "${UPLOAD_MAX_MIB:-256}"
-      TRANSLATE_URL: "${TRANSLATE_URL:-}"
+      TRANSLATE_URL: "${TRANSLATE_URL:-http://libretranslate:5000/translate}"
       TRANSLATE_API_KEY: "${TRANSLATE_API_KEY:-}"
     volumes:
       - catalog:/data
     restart: unless-stopped
+  libretranslate:
+    image: libretranslate/libretranslate:latest
+    environment:
+      LT_LOAD_ONLY: en,zh
+    volumes:
+      - translation_models:/home/libretranslate/.local
+    restart: unless-stopped
 volumes:
+  translation_models:
   catalog:

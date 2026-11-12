@@ -24,7 +24,7 @@ docker compose up -d --build
 
 ## 自动翻译
 
-后台编辑商品时，可将中文名称、介绍和看货说明翻译到空白的英文栏。校对后保存即可。在 `.env` 中将 `TRANSLATE_URL` 设为支持中文到英文的 LibreTranslate 服务的完整 `/translate` 地址。若服务要求密钥，再设置 `TRANSLATE_API_KEY`。应用通过服务器发送所选商品文字，密钥只在服务器端使用。修改配置后运行 `docker compose up -d`。
+后台编辑商品时，可将中文名称、介绍和看货说明翻译到空白的英文栏。校对后保存即可。运行 `docker compose up -d --build` 会同时启动自托管 LibreTranslate。首次启动需要下载中英文模型，可用 `docker compose logs -f libretranslate` 查看进度。模型保存在 `translation_models` 卷里。翻译服务通过 Docker 内网访问，无需对公网开放 5000 端口或申请 API 密钥。如需使用另一台翻译服务器，可以用 `TRANSLATE_URL` 覆盖内网地址。
 
 ## 上传限制
 
