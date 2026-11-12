@@ -15,6 +15,10 @@
     </select>
   </label>
   <label>价格（VT）<input name="price" type="number" min="0" max="999999999" step="1" required value="{{ item.price }}"></label>
+  <label>展示排序
+    <input name="sort_order" type="number" min="0" max="999999" step="1" value="{{ item.sort_order | default(0) }}">
+  </label>
+  <small>数字越大越靠前。同分时，较晚添加的商品排在前面。</small>
   <label>成色
     <select name="condition" required>
       <option value="" disabled{% if not item.condition %} selected{% endif %}>请选择成色</option>

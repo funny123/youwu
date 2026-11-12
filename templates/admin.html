@@ -13,7 +13,7 @@
   <h2>商品</h2>
   {% for item in items %}
   <article class="manage-row">
-    <div><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.price }} VT · {{ '已发布' if item.published else '未发布' }}</small></div>
+    <div><strong>{{ item.name }}</strong><small>{{ item.category }} · {{ item.price }} VT · 排序 {{ item.sort_order }} · {{ '已发布' if item.published else '未发布' }}</small></div>
     <div class="toolbar">
       <a class="line" href="{{ url_for('edit', item_id=item.id) }}">编辑</a>
       {% if item.published %}

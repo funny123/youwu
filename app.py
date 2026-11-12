@@ -38,8 +38,11 @@ with closing(sqlite3.connect(data_dir / 'catalog.db')) as db, db:
         );
     """)
     db.execute('BEGIN IMMEDIATE')
-    if 'extra_images' not in {row[1] for row in db.execute('PRAGMA table_info(items)')}:
+    item_columns = {row[1] for row in db.execute('PRAGMA table_info(items)')}
+    if 'extra_images' not in item_columns:
         db.execute("ALTER TABLE items ADD COLUMN extra_images TEXT NOT NULL DEFAULT '[]'")
+    if 'sort_order' not in item_columns:
+        db.execute('ALTER TABLE items ADD COLUMN sort_order INTEGER NOT NULL DEFAULT 0')
     db.execute("""
         CREATE TABLE IF NOT EXISTS settings (
             id INTEGER PRIMARY KEY CHECK(id = 1),
@@ -127,7 +130,7 @@ def index():
 def catalog():
     with connection() as db:
         items = [dict(row) for row in db.execute(
-            'SELECT * FROM items WHERE published = 1 ORDER BY rowid DESC'
+            'SELECT * FROM items WHERE published = 1 ORDER BY sort_order DESC, rowid DESC'
         )]
         seller = dict(db.execute('SELECT email, whatsapp, telegram FROM settings WHERE id = 1').fetchone())
     for item in items:
@@ -171,7 +174,7 @@ def logout():
 @app.get('/admin')
 def admin():
     with connection() as db:
-        items = db.execute('SELECT * FROM items ORDER BY rowid DESC').fetchall()
+        items = db.execute('SELECT * FROM items ORDER BY sort_order DESC, rowid DESC').fetchall()
         seller = db.execute('SELECT * FROM settings WHERE id = 1').fetchone()
     return render_template('admin.html', items=items, seller=seller)
 
@@ -190,7 +193,7 @@ def contact():
         error = '请输入 Telegram 用户名。'
     if error:
         with connection() as db:
-            items = db.execute('SELECT * FROM items ORDER BY rowid DESC').fetchall()
+            items = db.execute('SELECT * FROM items ORDER BY sort_order DESC, rowid DESC').fetchall()
         seller = {key: request.form.get(key, '') for key in ('email', 'whatsapp', 'telegram')}
         return render_template('admin.html', items=items, seller=seller, contact_error=error), 400
     with connection() as db, db:
@@ -230,6 +233,9 @@ def edit(item_id):
     item.update({key: request.form.get(key, '').strip() for key in (
         'name', 'category', 'price', 'condition', 'description', 'notes'
     )})
+    sort_order = request.form.get('sort_order')
+    if sort_order is not None:
+        item['sort_order'] = sort_order.strip() or '0'
     item['published'] = int(request.form.get('published') == '1')
     remove = set(request.form.getlist('remove_image'))
     try:
@@ -239,6 +245,8 @@ def edit(item_id):
         for key, choices in (('category', CATEGORIES), ('condition', CONDITIONS)):
             if item[key] not in choices and (not original or item[key] != original[key]):
                 raise ValueError('请选择列表中的分类和成色。')
+        if sort_order is not None and not re.fullmatch(r'[0-9]{1,6}', item['sort_order']):
+            raise ValueError('排序值须为 0 到 999999 的整数。')
         if not re.fullmatch(r'[0-9]{1,9}', item['price']):
             raise ValueError('瓦图价格须填写 0 到 999999999 的整数。')
         if not 1 <= len(item['description']) <= 4000 or len(item['notes']) > 2000:
@@ -260,6 +268,8 @@ def edit(item_id):
             current = db.execute('SELECT * FROM items WHERE id = ?', (item['id'],)).fetchone()
             if item_id and not current:
                 abort(404)
+            if sort_order is None:
+                item['sort_order'] = current['sort_order'] if current else 0
             old_images = photos(dict(current)) if current else []
             kept = [name for name in old_images if name not in remove]
             if item['published'] and not (kept or pending_images):
@@ -279,13 +289,14 @@ def edit(item_id):
             old_video = current['video'] if current else ''
             item['video'] = save_upload(pending_video) if pending_video else old_video
             db.execute("""
-                INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images)
+                INSERT INTO items (id,name,category,price,condition,description,notes,image,video,published,extra_images,sort_order)
                 VALUES (:id,:name,:category,:price,:condition,:description,
-                    :notes,:image,:video,:published,:extra_images)
+                    :notes,:image,:video,:published,:extra_images,:sort_order)
                 ON CONFLICT(id) DO UPDATE SET name=excluded.name, category=excluded.category,
                     price=excluded.price, condition=excluded.condition, description=excluded.description,
                     notes=excluded.notes, image=excluded.image, video=excluded.video,
-                    published=excluded.published, extra_images=excluded.extra_images
+                    published=excluded.published, extra_images=excluded.extra_images,
+                    sort_order=excluded.sort_order
             """, item)
     except ValueError as error:
         return item_form(item, error=str(error)), 400
